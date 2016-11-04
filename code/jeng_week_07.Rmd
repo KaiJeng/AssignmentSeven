@@ -14,17 +14,30 @@ library(choroplethr)
 library(rvest)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Maternal mortality tidy 
 
 ```{r cars}
 # Reading csv file from my github
 Mortal <- read.csv("https://raw.githubusercontent.com/KaiJeng/AssignmentSeven/master/data/xmart.csv")
 names(Mortal) <- make.names(names(Mortal))
+names(Mortal)[3] <- "Maternal.Mortality.Ratio"
+names(Mortal)[4] <- "Birth.Attend.Percentage"
 
+# Create and clean new variables
+Mortal$lower_bound <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"\\[[0-9]? [0-9]+")
+Mortal$lower_bound <- str_replace_all(Mortal$lower_bound,"\\[ ","")
+Mortal$lower_bound <- str_replace_all(Mortal$lower_bound,"\\[","")
+Mortal$lower_bound <- str_replace_all(Mortal$lower_bound," ","")
+Mortal$lower_bound <- as.numeric(Mortal$lower_bound)
+
+Mortal$upper_bound <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"[0-9]? [0-9]+\\]$")
+Mortal$upper_bound <- str_replace_all(Mortal$upper_bound," ","")
+Mortal$upper_bound <- str_replace_all(Mortal$upper_bound,"\\]","")
+Mortal$upper_bound <- as.numeric(Mortal$upper_bound)
+
+Mortal$Mortality <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"^[0-9]? ?[0-9]+")
+Mortal$Mortality <- str_replace_all(Mortal$Mortality," ","")
+Mortal$Mortality <- as.numeric(Mortal$Mortality)
 ```
 
 ## Including Plots
