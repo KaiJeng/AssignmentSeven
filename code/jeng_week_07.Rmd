@@ -29,15 +29,18 @@ Mortal$lower_bound <- str_replace_all(Mortal$lower_bound,"\\[ ","")
 Mortal$lower_bound <- str_replace_all(Mortal$lower_bound,"\\[","")
 Mortal$lower_bound <- str_replace_all(Mortal$lower_bound," ","")
 Mortal$lower_bound <- as.numeric(Mortal$lower_bound)
+Mortal$lower_bound[is.na(Mortal$lower_bound)] <- 0
 
 Mortal$upper_bound <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"[0-9]? [0-9]+\\]$")
 Mortal$upper_bound <- str_replace_all(Mortal$upper_bound," ","")
 Mortal$upper_bound <- str_replace_all(Mortal$upper_bound,"\\]","")
 Mortal$upper_bound <- as.numeric(Mortal$upper_bound)
+Mortal$upper_bound[is.na(Mortal$upper_bound)] <- 0
 
 Mortal$Mortality <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"^[0-9]? ?[0-9]+")
 Mortal$Mortality <- str_replace_all(Mortal$Mortality," ","")
 Mortal$Mortality <- as.numeric(Mortal$Mortality)
+Mortal$Mortality[is.na(Mortal$Mortality)] <- 0
 ```
 
 ## Including Plots
