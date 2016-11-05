@@ -108,9 +108,51 @@ Gone
 
 This graph is practically the opposite of the previous graph's trend. At very low maternal mortality ratios, gross national income can be much greater as compared to higher maternal mortality ratios. High gross nation income thus seems to be possible only at very low maternal mortality ratios.
 
-Now, we need to write a csv file of the merged data set from before.
+Now, we need to write a csv file of the merged data set from before. But since running the markdown will always write this file, I commentted it out. The csv (hopefully) is in the github repo already. 
 
 ```{r letter}
-
-write_csv(Merger, path = "~/Documents/MSDS597/Assignment 7/data/merger.csv")
+# write_csv(Merger, path = "~/Documents/MSDS597/Assignment 7/data/merger.csv")
 ```
+
+# Choropleth map
+
+Lastly we need a choropleth mapping of maternal mortality. First though, we need to get the most recent year for each country in the merged dataset befoe choropleth can be used.
+
+```{r rank}
+# Totally borrowed this second line of code. First filter out observations that didn't have morality values then rank.
+Merger <- filter(Merger, Merger$lower_bound != 0)
+Merger$Rank <- ave(Merger$Year, Merger$Country, FUN = function(x) rank(-x, ties.method="first"))
+Merger <- filter(Merger, Merger$Rank == 1)
+```
+
+With the most current year in the merged data for each country, we can now use choropleth.
+
+```{r country}
+ChoroMerge <- Merger[,c("Country","Mortality")]
+names(ChoroMerge) <- c("region","value")
+ChoroMerge$region <- tolower(ChoroMerge$region)
+
+# And now, to manually change all names that don't work to ones that do work. Some regions aren't represented at all.
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"republic of moldova","moldova")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"democratic people\\'s republic of korea","north korea")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"republic of korea","south korea")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"russian federation","russia")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"serbia","republic of serbia")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"syrian arab republic","syria")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"timor\\-leste","east timor")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"bahamas","the bahamas")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"venezuela \\(bolivarian republic of\\)", "venezuela")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"viet nam","vietnam")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"bolivia \\(plurinational state of\\)","bolivia")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"brunei darussalam","brunei")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"cote d\\'ivoire","ivory coast")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"congo","republic of congo")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"united kingdom of great britain and northern ireland","united kingdom")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"guinea\\-bissau","guinea bissau")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"iran \\(islamic republic of\\)","iran")
+ChoroMerge$region <- str_replace_all(ChoroMerge$region,"lao people\\'s democratic republic","laos")
+
+country_choropleth(ChoroMerge, title="Maternal Mortality Ratio around the world")
+```
+
+Countries in black either did not have data or was missed out somehow somewhere along the journey. The higher maternal mortality ratios are mostly located in Africa while more developed contries showing lower ratios. 
