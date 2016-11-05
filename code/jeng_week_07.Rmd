@@ -11,12 +11,14 @@ library(tidyverse)
 library(stringr)
 library(broom)
 library(choroplethr)
-library(rvest)
+library(ggthemes)
 ```
 
 ## Maternal mortality tidy 
 
-```{r cars}
+Below you can see the steps taken to tidy the Morality data. Regarding the warnings, as the varaibles are changed to numeric, any value that was a blank turns to "NA." Once that was done, we then take a look at the Income data.
+
+```{r moral}
 # Reading csv file from my github
 Mortal <- read.csv("https://raw.githubusercontent.com/KaiJeng/AssignmentSeven/master/data/xmart.csv")
 names(Mortal) <- make.names(names(Mortal))
@@ -41,14 +43,74 @@ Mortal$Mortality <- str_extract_all(Mortal$Maternal.Mortality.Ratio,"^[0-9]? ?[0
 Mortal$Mortality <- str_replace_all(Mortal$Mortality," ","")
 Mortal$Mortality <- as.numeric(Mortal$Mortality)
 Mortal$Mortality[is.na(Mortal$Mortality)] <- 0
+
+# Some year observations has ranges. For the sake of simplicity, I use the earlier year out of the range.
+Mortal$Year <- str_replace_all(Mortal$Year,"\\-[0-9]+$","")
+Mortal$Year <- as.numeric(Mortal$Year)
+# Get rid of old column
+Mortal$Maternal.Mortality.Ratio <- NULL
 ```
 
-## Including Plots
+## Gross national income tidy
 
-You can also embed plots, for example:
+Next, we take steps to tidy the income data as shown below. After some rearranging, we get separate variables for income and year.
 
-```{r pressure, echo=FALSE}
- Income <- read.csv("https://raw.githubusercontent.com/KaiJeng/AssignmentSeven/master/data/WHS9_93.csv")
+```{r income}
+# Clean and tidy Income data
+Income <- read.csv("https://raw.githubusercontent.com/KaiJeng/AssignmentSeven/master/data/WHS9_93.csv", skip = 1)
+names(Income) <- make.names(names(Income))
+Income$X.2013 <- str_replace_all(Income$X.2013," ","")
+Income$X.2013 <- as.integer(Income$X.2013)
+Income <- gather(Income, `X.2013`:`X.1990`, key = "Year", value = "Income")
+
+# Clean variables
+Income$Year <- str_replace_all(Income$Year,"X.","")
+Income$Year <- as.numeric(Income$Year)
+Income$Income <- as.numeric(Income$Income)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+# Merging and Graphing
+
+Now, we need to merge the two data sets. Using left join, we can merge the income data in respect to the morality data. Then, after creating two subsets of data, the graphs can be created.
+
+```{r merge}
+# Merge the data sets
+Merger <- left_join(Mortal, Income, by = c("Country","Year"))
+Merger$Birth.Attend.Percentage[is.na(Merger$Birth.Attend.Percentage)] <- 0
+Merger$Income[is.na(Merger$Income)] <- 0
+
+# Filter data sets for first graph 
+NoticeMe <- Merger[,c("Country","Year","Birth.Attend.Percentage","Income")]
+# Filter out observations that don't have values for one variable
+NoticeMe <- filter(NoticeMe, NoticeMe$Income != 0)
+NoticeMe <- filter(NoticeMe, NoticeMe$Birth.Attend.Percentage != 0)
+Doctor <- NoticeMe %>% ggplot(mapping = aes(Birth.Attend.Percentage, Income)) + geom_point() + xlab("Births attended by skilled health personnel (%)") + ylab("Gross national income per capita (PPP int. $)") + ggtitle("Does attendence really matter?") + theme_solarized() + scale_colour_solarized()
+
+# Filter data sets for second graph
+WheresMom <- Merger[,c("Country","Year","lower_bound","upper_bound","Mortality","Income")]
+# Filter out observations that don't have values for one variable (if lower_bound is zero, so is upper_bound and mortality)
+WheresMom <- filter(WheresMom, WheresMom$lower_bound != 0)
+WheresMom <- filter(WheresMom, WheresMom$Income != 0)
+Gone <- WheresMom %>% ggplot(mapping = aes(Mortality, Income)) + geom_point() + xlab("Maternal mortality ratio (per 100,000 live births)") + ylab("Gross national income per capita (PPP int. $)") + ggtitle("Does Mom help make money?") + theme_solarized() + scale_colour_solarized()
+```
+
+With the graphs created, lets quickly analyze them both:
+
+```{r graphie, echo=FALSE}
+Doctor
+```
+
+As the percentage of births attended by a skilled health personnel increases, the gross national income seem to stay low until it shoots up near the end somewhat exponentially (around 80-100%). What can be said about the data is that higher gross national incomes seem to be much more common when a country has a very high percentage of births attended by a skilled health personnel.  
+
+```{r graphy, echo=FALSE}
+Gone
+```
+
+This graph is practically the opposite of the previous graph's trend. At very low maternal mortality ratios, gross national income can be much greater as compared to higher maternal mortality ratios. High gross nation income thus seems to be possible only at very low maternal mortality ratios.
+
+Now, we need to write a csv file of the merged data set from before.
+
+```{r letter}
+
+write_csv(Merger, path = "~/Documents/MSDS597/Assignment 7/data/merger.csv")
+```
